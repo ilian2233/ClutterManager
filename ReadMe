@@ -1,0 +1,11 @@
+This program will organize your files in the current directory;
+
+Commands:
+    -add <extension>, <name of directory>:
+        Adds new extension to be organized and the directory that yu want to be put in;
+    -remove <extension>:
+        Removes an extension from the list;
+    -start:
+        Starts the sorting process;
+    -help:
+        Displays help info;
