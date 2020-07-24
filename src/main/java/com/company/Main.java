@@ -1,5 +1,7 @@
 package com.company;
 
+import lombok.extern.log4j.Log4j2;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -8,18 +10,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Log4j2
 public class Main {
 
     private static void sortFiles(Map<String, String> map) {
+        log.info("Start sorting files.");
         if (map == null) {
             return;
         }
         map.forEach(Main::moveAllFilesWithSameExtension);
     }
 
-    private static void moveAllFilesWithSameExtension(String i, String j) {
+    private static void moveAllFilesWithSameExtension(String extension, String directory) {
 
-        File[] files = new File("").listFiles((dir, name) -> name.endsWith("." + i));
+        log.info("Moving all '" + extension + "' files to " + directory);
+        File[] files = new File("").listFiles((dir, name) -> name.endsWith("." + extension));
         if (files == null) {
             return;
         }
@@ -29,10 +34,10 @@ public class Main {
             return;
         }
 
-        File newDir = new File(j);
+        File newDir = new File(directory);
         int k = 1;
         while (newDir.exists() || newDir.isDirectory()) {
-            newDir = new File(j + k);
+            newDir = new File(directory + k);
             k++;
         }
 
@@ -41,7 +46,7 @@ public class Main {
                 System.out.println("Directory not created!");
                 return;
             }
-        } catch (IOException e){
+        } catch (IOException e) {
             System.out.println("Directory not created!");
             return;
         }
@@ -59,13 +64,13 @@ public class Main {
     }
 
     private static void help() {
-
+        log.info("Displaying help.");
         String help;
 
         try {
-            FileInputStream readMe = new FileInputStream("ReadMe");
+            InputStream readMe = Main.class.getClassLoader().getResourceAsStream("ReadMe");
             help = new String(readMe.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
+        } catch (IOException | NullPointerException e) {
             e.printStackTrace();
             help = "Error occurred!\nPlease reinstall the program.";
         }
@@ -74,7 +79,8 @@ public class Main {
     }
 
     private static void saveMap(Map<String, String> map) throws IOException {
-        File mapSaveFile = new File("map");
+        log.info("Saving map.");
+        File mapSaveFile = new File(".map");
         mapSaveFile.createNewFile();
         FileOutputStream fileOutputStream = new FileOutputStream(mapSaveFile);
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
@@ -86,8 +92,10 @@ public class Main {
     private static Map<String, String> retrieveMap() throws ClassNotFoundException, IOException {
         FileInputStream fileInputStream;
         try {
-            fileInputStream = new FileInputStream("map");
+            log.info("Trying to find existing map.");
+            fileInputStream = new FileInputStream(".map");
         } catch (FileNotFoundException e) {
+            log.info("Map not found; Creating new Map.");
             return new HashMap<>();
         }
         ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
@@ -96,19 +104,24 @@ public class Main {
 
     public static void main(String[] args) {
 
-        Map<String, String> extensionToStringMap;
-        try {
-            extensionToStringMap = retrieveMap();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-            return;
-        }
-
         if (args.length < 1) {
+            log.info("No arguments found displaying help.");
             help();
             return;
         }
 
+        Map<String, String> extensionToStringMap;
+        try {
+            log.info("Trying to retrieve map.");
+            extensionToStringMap = retrieveMap();
+        } catch (IOException | ClassNotFoundException e) {
+            log.info("Critical fail!");
+            log.error(e.getStackTrace());
+            System.out.println("Error creating map!");
+            return;
+        }
+
+        log.info("First parameter: " + args[0]);
         switch (args[0]) {
             case "-start":
                 sortFiles(extensionToStringMap);
@@ -116,6 +129,7 @@ public class Main {
                 break;
             case "-add":
                 if ((!args[1].isBlank()) && (!args[2].isBlank())) {
+                    log.info("Adding instructions for '." + args[1] + "' to " + args[2] + ".");
                     extensionToStringMap.put(args[1], args[2]);
                     System.out.println("Extension added.");
                 } else {
@@ -129,15 +143,13 @@ public class Main {
                 if (args[1].isBlank()) {
                     help();
                 }
+                log.info("Removing instructions for '."+args[1]+"'.");
                 extensionToStringMap.remove(args[1]);
-                //TODO: add removing directory
                 break;
             default:
                 help();
                 break;
         }
-
-        //TODO: add logger
 
         try {
             saveMap(extensionToStringMap);
