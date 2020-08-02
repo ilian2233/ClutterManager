@@ -5,6 +5,7 @@ import lombok.extern.log4j.Log4j2;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -23,8 +24,8 @@ public class Main {
 
     private static void moveAllFilesWithSameExtension(String extension, String directory) {
 
-        log.info("Moving all '" + extension + "' files to " + directory);
-        File[] files = new File("").listFiles((dir, name) -> name.endsWith("." + extension));
+        log.info("Moving all '" + extension + "' files to the folder '" + directory + "'");
+        File[] files = new File(".").listFiles((dir, name) -> name.endsWith("." + extension));
         if (files == null) {
             return;
         }
@@ -35,27 +36,22 @@ public class Main {
         }
 
         File newDir = new File(directory);
-        int k = 1;
-        while (newDir.exists() || newDir.isDirectory()) {
-            newDir = new File(directory + k);
-            k++;
-        }
-
-        try {
-            if (!newDir.createNewFile() && !newDir.mkdir()) {
+        if (!newDir.exists()) {
+            try {
+                if (!newDir.mkdir()) {
+                    System.out.println("Directory not created!");
+                    return;
+                }
+            } catch (SecurityException e) {
                 System.out.println("Directory not created!");
                 return;
             }
-        } catch (IOException e) {
-            System.out.println("Directory not created!");
-            return;
         }
 
         final File finalNewDir = newDir;
-
         fileList.forEach(file -> {
             try {
-                Files.move(file.toPath(), finalNewDir.toPath());
+                Files.move(file.toPath(), Paths.get(finalNewDir.toPath() + "/" + file.getName()));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -98,6 +94,7 @@ public class Main {
             log.info("Map not found; Creating new Map.");
             return new HashMap<>();
         }
+        log.info("Map retrieved.");
         ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
         return (Map<String, String>) objectInputStream.readObject();
     }
@@ -143,7 +140,7 @@ public class Main {
                 if (args[1].isBlank()) {
                     help();
                 }
-                log.info("Removing instructions for '."+args[1]+"'.");
+                log.info("Removing instructions for '." + args[1] + "'.");
                 extensionToStringMap.remove(args[1]);
                 break;
             default:
